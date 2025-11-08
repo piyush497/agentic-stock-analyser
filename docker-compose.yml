@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  java-stock-api:
+    build:
+      context: ./java-stock-api
+    container_name: java-stock-api
+    ports:
+      - "8080:8080"
+
+  python-agent-client:
+    build:
+      context: ./pythen-agent-client
+    container_name: python-agent-client
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-changeme}
+      - JAVA_API_BASE_URL=http://java-stock-api:8080/api/v1/stock
+    ports:
+      - "8000:8000"
+    depends_on:
+      - java-stock-api

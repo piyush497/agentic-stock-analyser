@@ -1,0 +1,7 @@
+.gradle/
+build/
+.gradle/*
+**/build/
+.git/
+.gitignore
+README.md

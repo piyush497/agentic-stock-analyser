@@ -8,7 +8,7 @@ from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-JAVA_API_BASE_URL = "http://localhost:8080/api/v1/stock" 
+JAVA_API_BASE_URL = os.getenv("JAVA_API_BASE_URL", "http://localhost:8080/api/v1/stock") 
 
 class StockDataInput(BaseModel):
     """Input for the stock price retrieval tool."""
