@@ -1,6 +1,4 @@
 # How to Run in Production
-## Files
-- Place `main_server.py`, `agent_logic.py`, and `chatbot_frontend.html` in the same directory.
 
 ## Install dependencies
 ```bash
@@ -29,7 +27,7 @@ uvicorn main_server:app --reload
 - Open your browser to: http://127.0.0.1:8000/
 
 ## Notes
-> The LangChain logic is isolated, making it easy to test or swap out the agent without touching the web server. The web server clearly handles just the request/response cycle. Do you want to modify any of the agent's instructions now that the files are separated?
+> The LangChain Agent logic is isolated, making it easy to test or swap out the agent without touching the web server. The web server clearly handles just the request/response cycle.
 
 ## Dependencies
 
