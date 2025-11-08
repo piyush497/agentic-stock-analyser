@@ -1,30 +1,23 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage ----
-FROM eclipse-temurin:17-jdk AS build
-WORKDIR /app
+FROM gradle:8-jdk17 AS build
+WORKDIR /workspace
 
-# Copy gradle wrapper and config first for better caching
-COPY gradlew gradlew
-COPY gradle gradle
+# Copy build files first for caching
 COPY build.gradle settings.gradle ./
-
-# Make gradlew executable
-RUN chmod +x gradlew
-
-# Download dependencies
-RUN ./gradlew --no-daemon dependencies > /dev/null 2>&1 || true
+RUN gradle --version
 
 # Copy source and build
-COPY src src
-RUN ./gradlew --no-daemon clean bootJar
+COPY src ./src
+RUN gradle --no-daemon clean bootJar
 
 # ---- Runtime stage ----
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # Copy the fat jar from the build stage
-COPY --from=build /app/build/libs/*.jar app.jar
+COPY --from=build /workspace/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
