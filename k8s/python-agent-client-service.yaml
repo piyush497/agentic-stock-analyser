@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-agent-client
+  namespace: stock-analyser
+spec:
+  type: ClusterIP
+  selector:
+    app: python-agent-client
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

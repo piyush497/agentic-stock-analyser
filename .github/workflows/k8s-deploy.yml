@@ -1,0 +1,60 @@
+name: k8s-deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          version: v0.22.0
+          cluster_name: stock-analyser
+
+      - name: Build images
+        run: |
+          docker build -t local/java-stock-api:latest ./java-stock-api
+          docker build -t local/python-agent-client:latest ./pythen-agent-client
+
+      - name: Load images into kind
+        run: |
+          kind load docker-image local/java-stock-api:latest --name stock-analyser
+          kind load docker-image local/python-agent-client:latest --name stock-analyser
+
+      - name: Create namespace
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+
+      - name: Create OpenAI secret (optional)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            kubectl -n stock-analyser delete secret openai-secret --ignore-not-found
+            kubectl -n stock-analyser create secret generic openai-secret \
+              --from-literal=OPENAI_API_KEY="$OPENAI_API_KEY"
+          else
+            echo "OPENAI_API_KEY not set; proceeding without secret."
+          fi
+
+      - name: Apply manifests
+        run: |
+          kubectl -n stock-analyser apply -f k8s/java-stock-api-deployment.yaml
+          kubectl -n stock-analyser apply -f k8s/java-stock-api-service.yaml
+          kubectl -n stock-analyser apply -f k8s/python-agent-client-deployment.yaml
+          kubectl -n stock-analyser apply -f k8s/python-agent-client-service.yaml
+
+      - name: Wait for rollouts (zero-downtime)
+        run: |
+          kubectl -n stock-analyser rollout status deployment/java-stock-api --timeout=180s
+          kubectl -n stock-analyser rollout status deployment/python-agent-client --timeout=180s

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-agent-client
+  namespace: stock-analyser
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: python-agent-client
+  template:
+    metadata:
+      labels:
+        app: python-agent-client
+    spec:
+      containers:
+        - name: python-agent-client
+          image: local/python-agent-client:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "uvicorn", "main_server:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          env:
+            - name: JAVA_API_BASE_URL
+              value: "http://java-stock-api:8080/api/v1/stock"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-secret
+                  key: OPENAI_API_KEY
+                  optional: true
+          resources:
+            requests:
+              memory: "1500Mi"
+            limits:
+              memory: "2000Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      restartPolicy: Always
