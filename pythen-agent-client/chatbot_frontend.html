@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Stock Advisor Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f7f7f7; }
+        .chat-container { height: 80vh; max-height: 80vh; overflow-y: auto; }
+        .user-message { background-color: #3b82f6; color: white; border-radius: 1rem 1rem 0.25rem 1rem; }
+        .agent-message { background-color: #ffffff; color: #1f2937; border: 1px solid #e5e7eb; border-radius: 1rem 1rem 1rem 0.25rem; }
+        .loading-dot { animation: dot-flashing 1s infinite alternate; }
+        .loading-dot:nth-child(2) { animation-delay: 0.3s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.6s; }
+        @keyframes dot-flashing {
+            0% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-lg bg-white shadow-xl rounded-xl flex flex-col h-[90vh]">
+        <header class="p-4 border-b bg-gray-50 rounded-t-xl">
+            <h1 class="text-2xl font-bold text-gray-800">Stock Advisor Agent</h1>
+            <p class="text-sm text-gray-500">Ask for a stock analysis (e.g., "Should I buy MSFT with a $430 target?").</p>
+        </header>
+
+        <!-- Chat Display Area -->
+        <div id="chat-history" class="chat-container flex-grow p-4 space-y-4">
+            <div class="flex justify-start">
+                <div class="agent-message max-w-xs p-3 shadow-md">
+                    Hello! I'm your Financial Analyst Agent. I can query our Java service for real-time stock prices and give you an investment recommendation.
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <form id="chat-form" class="p-4 border-t">
+            <div class="flex space-x-3">
+                <input type="text" id="prompt-input" placeholder="Enter your question..." required
+                       class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                <button type="submit" id="send-button"
+                        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 disabled:bg-gray-400">
+                    Send
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const chatForm = document.getElementById('chat-form');
+        const promptInput = document.getElementById('prompt-input');
+        const sendButton = document.getElementById('send-button');
+
+        function appendMessage(sender, text) {
+            const messageDiv = document.createElement('div');
+            const innerDiv = document.createElement('div');
+            
+            messageDiv.className = sender === 'user' ? 'flex justify-end' : 'flex justify-start';
+            innerDiv.className = sender === 'user' ? 'user-message max-w-xs p-3 shadow-md' : 'agent-message max-w-xs p-3 shadow-md';
+            
+            // Format output to improve readability of complex agent responses
+            if (sender === 'agent') {
+                text = text.replace(/(\*\*|###|\n)/g, ''); // Remove Markdown artifacts
+                innerDiv.innerHTML = text.replace(/\n/g, '<br>');
+            } else {
+                innerDiv.textContent = text;
+            }
+
+            messageDiv.appendChild(innerDiv);
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight; // Auto-scroll
+        }
+
+        function showLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading-indicator';
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.innerHTML = `
+                <div class="agent-message max-w-xs p-3 shadow-md flex space-x-1">
+                    <span class="text-xs">Thinking...</span>
+                    <span class="loading-dot text-lg">.</span>
+                    <span class="loading-dot text-lg">.</span>
+                    <span class="loading-dot text-lg">.</span>
+                </div>`;
+            chatHistory.appendChild(loadingDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            sendButton.disabled = true;
+        }
+
+        function hideLoading() {
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.remove();
+            }
+            sendButton.disabled = false;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prompt = promptInput.value.trim();
+            if (!prompt) return;
+
+            appendMessage('user', prompt);
+            promptInput.value = '';
+            showLoading();
+
+            try {
+                // The API call hits the /chat endpoint defined in main_server.py
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server returned an error.');
+                }
+
+                const data = await response.json();
+                appendMessage('agent', data.response);
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                appendMessage('agent', 'Error: Could not get a response from the agent. Please check the server logs and ensure the Java API is running.');
+            } finally {
+                hideLoading();
+            }
+        });
+    </script>
+</body>
+</html>
