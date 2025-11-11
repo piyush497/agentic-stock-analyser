@@ -79,7 +79,7 @@ kubectl create secret generic openai-secret --namespace=stock-analyser `
   --from-literal=OPENAI_API_KEY='<YOUR_OPENAI_API_KEY>'
 
 kubectl create secret generic openai-secret --namespace=stock-analyser `
-  --from-literal=OPENAI_API_KEY='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'
+  --from-literal=OPENAI_API_KEY='<YOUR_OPENAI_API_KEY>'
 
     • What it does:
         ○ kubectl create secret generic: Tells Kubernetes to create a standard secret.
