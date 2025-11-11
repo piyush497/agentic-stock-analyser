@@ -4,7 +4,7 @@ metadata:
   name: python-agent-client
   namespace: stock-analyser
 spec:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
